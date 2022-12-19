@@ -74,36 +74,19 @@ func isModel(nodeKey string) bool {
 	return strings.HasPrefix(nodeKey, "model")
 }
 
-func replaceFrom(sql string, replacement Replacement) string {
+func replace(sql string, replacement Replacement) string {
 	regexWithAlias, err := regexp.Compile(fmt.Sprintf(`%s\sAS\s([A-z0-9_]+)\s.*/gi`, replacement.TableFullName))
 	if err != nil {
 		panic(err)
 	}
 	useExistingAlias := fmt.Sprintf("(%s) AS $1", replacement.ReplaceSql, replacement.TableShortName)
-
 	// replace all "TABLENAME as X" in current sql
 	newSql := regexWithAlias.ReplaceAllString(sql, useExistingAlias)
-
-	
-	regexWithoutAlias, err := regexp.Compile(fmt.Sprintf(`%s/gi`, replacement.TableFullName))
-	if err != nil {
-		panic(err)
-	}
-	createAlias :=  fmt.Sprintf("(%s) AS %s", replacement.ReplaceSql, replacement.TableShortName)
-	
+	createAlias := fmt.Sprintf("(%s) AS %s", replacement.ReplaceSql, replacement.TableShortName)
 	// replace all "TABLENAME" in current sql
-	newSql = regexWithoutAlias.ReplaceAllString(newSql, createAlias)
+	newSql = strings.ReplaceAll(newSql, fmt.Sprintf("%s", replacement.TableFullName), createAlias)
 	return newSql
 }
-
-// table from is built as for models
-// 'database': 'fq-stage-bigquery
-//  'schema': 'data_feeds_clean',
-//  'name': 'data_feeds_clean'
-//  'alias': 'data_feeds_clean'
-
-// for sources
-// relation_name is the table name
 
 func sqlModel(manifest Manifest, nodeKey string, mocks []Mock) (Replacement, error) {
 	currentNode := manifest.Nodes[nodeKey]
@@ -128,14 +111,17 @@ func sqlModel(manifest Manifest, nodeKey string, mocks []Mock) (Replacement, err
 	sqlCode := currentNode.Compiledcode
 
 	for _, replacement := range node2sql {
-		sqlCode = replaceFrom(sqlCode, replacement)
+		sqlCode = replace(sqlCode, replacement)
 
 	}
 	// replace table in current compiled code
 	//fmt.Println(sqlCode)
 	fullname := fmt.Sprintf("`%s`.`%s`.`%s`", currentNode.Database, currentNode.Schema, currentNode.Name)
 	shortname := currentNode.Alias
-	return Replacement{ReplaceSql: sqlCode, TableFullName: fullname, TableShortName: shortname}, nil
+	replacement := Replacement{ReplaceSql: sqlCode, TableFullName: fullname, TableShortName: shortname}
+	fmt.Println("Returning")
+	fmt.Println(replacement)
+	return replacement, nil
 }
 
 func sqlSource(manifest Manifest, sourceKey string, mocks []Mock) (Replacement, error) {
@@ -170,7 +156,9 @@ func main() {
 	m := parseManifest("manifest.json")
 
 	//replacement, err := sql(m, "model.data_feeds.long_term_liquidity_feeds", test.mocks)
-	replacement, err := sql(m, "model.data_feeds.volume_by_asset_latest", test.mocks)
+	//replacement, err := sql(m, "model.data_feeds.volume_by_asset_latest", test.mocks)
+	replacement, err := sql(m, "model.data_feeds.liq_evals_by_asset", test.mocks)
+
 	if err != nil {
 		panic(err)
 	}
