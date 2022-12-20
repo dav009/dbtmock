@@ -2,17 +2,27 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
+	"csv"
 )
 
+/* Describing Tests as structures */
 type Mock struct {
-	name   string
-	model  bool
-	source bool
+	name     string
+	model    bool
+	source   bool
+	filepath string
+}
+
+type Replacement struct {
+	TableFullName  string
+	ReplaceSql     string
+	TableShortName string
 }
 
 type Output struct {
@@ -23,10 +33,11 @@ type Output struct {
 type Test struct {
 	name   string
 	model  string
-	mocks  []Mock
+	mocks  map[string]Mock
 	output Output
 }
 
+/* Manifest parsing */
 type Source struct {
 	Name         string                 `json:"name"`
 	UniqueId     string                 `json:"unique_id"`
@@ -51,12 +62,6 @@ type Manifest struct {
 	X       map[string]interface{} `json:"-"`
 }
 
-type Replacement struct {
-	TableFullName  string
-	ReplaceSql     string
-	TableShortName string
-}
-
 func parseManifest(path string) Manifest {
 	jsonFile, err := os.Open(path)
 	if err != nil {
@@ -75,29 +80,36 @@ func isModel(nodeKey string) bool {
 }
 
 func Replace(sql string, replacement Replacement) string {
+	if (replacement == Replacement{}) {
+		return sql
+	}
 	regexWithAlias, err := regexp.Compile(fmt.Sprintf(`(?i)%s\sas\s([A-z0-9_]+)\s`, replacement.TableFullName))
 	if err != nil {
 		panic(err)
 	}
 	useExistingAlias := fmt.Sprintf("(%s) AS $1 ", replacement.ReplaceSql)
-	// replace all "TABLENAME as X" in current sql
-	fmt.Println(regexWithAlias)
-	fmt.Println("MATCHES")
-	fmt.Println(regexWithAlias.FindAllString(sql, -1))
 	newSql := regexWithAlias.ReplaceAllString(sql, useExistingAlias)
 	createAlias := fmt.Sprintf("(%s) AS %s", replacement.ReplaceSql, replacement.TableShortName)
-	// replace all "TABLENAME" in current sql
 	newSql = strings.ReplaceAll(newSql, fmt.Sprintf("%s", replacement.TableFullName), createAlias)
 	return newSql
 }
 
-func sqlModel(manifest Manifest, nodeKey string, mocks []Mock) (Replacement, error) {
+func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
 	currentNode := manifest.Nodes[nodeKey]
+	fullname := fmt.Sprintf("`%s`.`%s`.`%s`", currentNode.Database, currentNode.Schema, currentNode.Name)
+	shortname := currentNode.Alias
+
+	// if in mocks return the mock replacment
+	if m, ok := mocks[nodeKey]; ok {
+		r := Replacement{
+			TableFullName:  fullname,
+			ReplaceSql:     mockToSql(m),
+			TableShortName: shortname}
+		return r, nil
+	}
+
+	// if not a mock then recursively build query
 	dependencies := currentNode.DependsOn["nodes"]
-	fmt.Println("-------")
-	fmt.Println(fmt.Sprintf("nodekey: %s", nodeKey))
-	fmt.Println(fmt.Sprintf("deps %v", dependencies))
-	fmt.Println("-------")
 	node2sql := make(map[string]Replacement)
 	for _, otherNodeKey := range dependencies {
 		r, err := sql(manifest, otherNodeKey, mocks)
@@ -113,25 +125,42 @@ func sqlModel(manifest Manifest, nodeKey string, mocks []Mock) (Replacement, err
 		sqlCode = Replace(sqlCode, replacement)
 
 	}
-	fullname := fmt.Sprintf("`%s`.`%s`.`%s`", currentNode.Database, currentNode.Schema, currentNode.Name)
-	shortname := currentNode.Alias
+
 	replacement := Replacement{ReplaceSql: sqlCode, TableFullName: fullname, TableShortName: shortname}
-	fmt.Println("Returning")
-	fmt.Println(replacement)
 	return replacement, nil
 }
 
-func sqlSource(manifest Manifest, sourceKey string, mocks []Mock) (Replacement, error) {
-	// if source is in mocks then return mock, otherwise keep as it is
+func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Replacement, error) {
 	source := manifest.Sources[sourceKey]
-	r := Replacement{
-		TableFullName:  source.RelationName,
-		ReplaceSql:     "select 1 as id",
-		TableShortName: source.Name}
-	return r, nil
+	if m, ok := mocks[sourceKey]; ok {
+		r := Replacement{
+			TableFullName:  source.RelationName,
+			ReplaceSql:     mockToSql(m),
+			TableShortName: source.Name}
+		return r, nil
+	}
+	errors.New("something")
+	return Replacement{}, nil //errors.New(fmt.Sprintf("%v not mocked", sourceKey))
 }
 
-func sql(manifest Manifest, nodeKey string, mocks []Mock) (Replacement, error) {
+func mockToSql(m Mock) string {
+	file, err := os.Open(m.filepath)
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, fields := range records {
+		entry := "select"
+		for _, field := range fields{
+			entry = fmt.Sprintf("%v %v AS %v", entry, field, column)
+		}
+	}
+	return "select 1 as id"
+}
+
+func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
 	if isModel(nodeKey) {
 		return sqlModel(manifest, nodeKey, mocks)
 	} else {
@@ -143,8 +172,8 @@ func main() {
 	test := Test{
 		name:  "dummy_test",
 		model: "dummy_model",
-		mocks: []Mock{
-			Mock{name: "mock1", model: true},
+		mocks: map[string]Mock{
+			"sme": Mock{name: "mock1", model: true},
 		},
 		output: Output{name: "first check", filetype: "csv"},
 	}
