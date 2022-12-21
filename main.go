@@ -4,13 +4,14 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"sort"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
-	"filepath"
 	"strings"
 )
 
@@ -181,7 +182,14 @@ func mockToSql(m Mock) string {
 	var sqlStatements []string
 	for _, row := range data {
 		columnsValues := []string{}
-		for column, value := range row {
+		columns := make([]string, 0)
+		// ordering columns so we can test
+		for k, _ := range  row {
+			columns = append(columns, k)
+		}
+		sort.Strings(columns)
+		for _, column := range columns {
+			value := row[column]
 			if columnType, ok := m.types[column]; ok {
 				columnsValues = append(columnsValues, fmt.Sprintf("CAST(%s AS %s) AS %s", value, columnType, column))
 				fmt.Println(columnsValues)

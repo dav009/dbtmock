@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -47,4 +48,13 @@ func TestMockToSqlWithTypes(t *testing.T) {
 	assert.True(t, strings.Contains(sql, expectedSQL1))
 	assert.True(t, strings.Contains(sql, expectedSQL2))
 	assert.True(t, strings.Contains(sql, expectedSQL3))
+}
+
+func TestParseJson(t *testing.T) {
+
+	fmt.Println("parsing")
+	test, err := parseTest("test.json")
+	assert.Nil(t, err)
+	fmt.Println(test)
+	//	assse
 }
