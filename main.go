@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"filepath"
 	"strings"
 )
 
@@ -217,6 +218,20 @@ func parseTest(path string) (Test, error) {
 }
 
 func parseFolder(path string) ([]Test, error) {
+	files, err := ioutil.ReadDir(path)
+	tests := []Test{}
+	if err != nil {
+		return []Test{}, err
+	}
+	for _, f := range files {
+		fullPath := filepath.Join(path, f.Name())
+		test, err := parseTest(fullPath)
+		if err != nil {
+			return []Test{}, err
+		}
+		tests = append(tests, test)
+
+	}
 	return []Test{}, nil
 }
 
