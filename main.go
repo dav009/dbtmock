@@ -15,11 +15,11 @@ import (
 
 /* Describing Tests as structures */
 type Mock struct {
-	name     string
+	name     string `json:"name"`
 	model    bool
 	source   bool
-	filepath string
-	types    map[string]string
+	filepath string            `json:"filepath"`
+	types    map[string]string `json:"types"`
 }
 
 type Replacement struct {
@@ -34,10 +34,10 @@ type Output struct {
 }
 
 type Test struct {
-	name   string
-	model  string
-	mocks  map[string]Mock
-	output Output
+	name   string          `json:"name"`
+	model  string          `json:"model"`
+	mocks  map[string]Mock `json:"models"`
+	output Output          `json:"output"`
 }
 
 /* Manifest parsing */
@@ -201,6 +201,23 @@ func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement,
 	} else {
 		return sqlSource(manifest, nodeKey, mocks)
 	}
+}
+
+func parseTest(path string) (Test, error) {
+	jsonFile, err := os.Open(path)
+	if err != nil {
+		return Test{}, err
+	}
+	bytes, _ := ioutil.ReadAll(jsonFile)
+	test := Test{}
+	if err := json.Unmarshal(bytes, &test); err != nil {
+		return Test{}, err
+	}
+	return test, nil
+}
+
+func parseFolder(path string) ([]Test, error) {
+	return []Test{}, nil
 }
 
 func main() {
