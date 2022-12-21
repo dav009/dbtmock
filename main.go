@@ -17,11 +17,9 @@ import (
 
 /* Describing Tests as structures */
 type Mock struct {
-	name     string `json:"name"`
-	model    bool
-	source   bool
-	filepath string            `json:"filepath"`
-	types    map[string]string `json:"types"`
+	Name     string `json:"name"`
+	Filepath string            `json:"filepath"`
+	Types    map[string]string `json:"types"`
 }
 
 type Replacement struct {
@@ -31,15 +29,14 @@ type Replacement struct {
 }
 
 type Output struct {
-	name     string
-	filetype string
+	Name     string `json:"name"`
 }
 
 type Test struct {
-	name   string          `json:"name"`
-	model  string          `json:"model"`
-	mocks  map[string]Mock `json:"models"`
-	output Output          `json:"output"`
+	Name   string          `json:"name"`
+	Model  string          `json:"model"`
+	Mocks  map[string]Mock `json:"mocks"`
+	Output Output          `json:"output"`
 }
 
 /* Manifest parsing */
@@ -174,7 +171,7 @@ func CSVToMap(reader io.Reader) []map[string]string {
 }
 
 func mockToSql(m Mock) string {
-	file, err := os.Open(m.filepath)
+	file, err := os.Open(m.Filepath)
 	if err != nil {
 		panic(err)
 	}
@@ -190,9 +187,9 @@ func mockToSql(m Mock) string {
 		sort.Strings(columns)
 		for _, column := range columns {
 			value := row[column]
-			if columnType, ok := m.types[column]; ok {
+			if columnType, ok := m.Types[column]; ok {
 				columnsValues = append(columnsValues, fmt.Sprintf("CAST(%s AS %s) AS %s", value, columnType, column))
-				fmt.Println(columnsValues)
+			
 			} else {
 				columnsValues = append(columnsValues, fmt.Sprintf("%s AS %s", value, column))
 			}
@@ -217,7 +214,10 @@ func parseTest(path string) (Test, error) {
 	if err != nil {
 		return Test{}, err
 	}
-	bytes, _ := ioutil.ReadAll(jsonFile)
+	bytes, err := ioutil.ReadAll(jsonFile)
+	if err!=nil{
+		return Test{}, err
+	}
 	test := Test{}
 	if err := json.Unmarshal(bytes, &test); err != nil {
 		return Test{}, err
@@ -245,16 +245,16 @@ func parseFolder(path string) ([]Test, error) {
 
 func main() {
 	test := Test{
-		name:  "dummy_test",
-		model: "dummy_model",
-		mocks: map[string]Mock{
-			"sme": Mock{name: "mock1", model: true},
+		Name:  "dummy_test",
+		Model: "dummy_model",
+		Mocks: map[string]Mock{
+			"sme": Mock{Name: "mock1"},
 		},
-		output: Output{name: "first check", filetype: "csv"},
+		Output: Output{Name: "first check"},
 	}
 	m := parseManifest("manifest.json")
 
-	replacement, err := sql(m, "model.data_feeds.liq_evals_by_asset", test.mocks)
+	replacement, err := sql(m, "model.data_feeds.liq_evals_by_asset", test.Mocks)
 
 	if err != nil {
 		panic(err)

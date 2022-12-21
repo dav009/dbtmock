@@ -1,0 +1,16 @@
+{
+    "name": "dummy_test",
+    "model": "dummy_model",
+    "mocks": {
+        "something": {
+            "name": "mock1.mock",
+            "filepath": "something.csv",
+            "types": {
+                "c1": "int64"
+            }
+       }
+    },
+    "output": {
+        "name": "something"
+    }
+}
