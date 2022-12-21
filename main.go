@@ -1,14 +1,16 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 	"strings"
-	"csv"
 )
 
 /* Describing Tests as structures */
@@ -17,6 +19,7 @@ type Mock struct {
 	model    bool
 	source   bool
 	filepath string
+	types    map[string]string
 }
 
 type Replacement struct {
@@ -143,21 +146,52 @@ func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Repl
 	return Replacement{}, nil //errors.New(fmt.Sprintf("%v not mocked", sourceKey))
 }
 
+func CSVToMap(reader io.Reader) []map[string]string {
+	r := csv.NewReader(reader)
+	rows := []map[string]string{}
+	var header []string
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		if header == nil {
+			header = record
+		} else {
+			dict := map[string]string{}
+			for i := range header {
+				dict[header[i]] = record[i]
+			}
+			rows = append(rows, dict)
+		}
+	}
+	return rows
+}
+
 func mockToSql(m Mock) string {
 	file, err := os.Open(m.filepath)
-	reader := csv.NewReader(file)
-	records, err := reader.ReadAll()
 	if err != nil {
 		panic(err)
 	}
+	data := CSVToMap(file)
+	var sqlStatements []string
+	for _, row := range data {
+		columnsValues := []string{}
+		for column, value := range row {
+			if columnType, ok := m.types[column]; ok {
+				columnsValues = append(columnsValues, fmt.Sprintf("( %s as %s ) AS %s", value, columnType, column))
+			} else {
+				columnsValues = append(columnsValues, fmt.Sprintf("%s AS %s", value, column))
+			}
 
-	for _, fields := range records {
-		entry := "select"
-		for _, field := range fields{
-			entry = fmt.Sprintf("%v %v AS %v", entry, field, column)
 		}
+		statement := fmt.Sprintf("\n SELECT %s", strings.Join(columnsValues, ", "))
+		sqlStatements = append(sqlStatements, statement)
 	}
-	return "select 1 as id"
+	return strings.Join(sqlStatements, "\n UNION ALL \n")
 }
 
 func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
