@@ -37,3 +37,14 @@ func TestMockToSql(t *testing.T) {
 	assert.True(t, strings.Contains(sql, expectedSQL2))
 	assert.True(t, strings.Contains(sql, expectedSQL3))
 }
+
+func TestMockToSqlWithTypes(t *testing.T) {
+	m := Mock{filepath: "sample.csv", types: map[string]string{"column2": "INT64"}}
+	sql := mockToSql(m)
+	expectedSQL1 := "SELECT something AS column1, CAST(1.0 AS INT64) AS column2, 100 AS column3"
+	expectedSQL2 := "SELECT something2 AS column1, CAST(2.0 AS INT64) AS column2, 200 AS column3"
+	expectedSQL3 := "SELECT something3 AS column1, CAST(3.0 AS INT64) AS column2, 300 AS column3"
+	assert.True(t, strings.Contains(sql, expectedSQL1))
+	assert.True(t, strings.Contains(sql, expectedSQL2))
+	assert.True(t, strings.Contains(sql, expectedSQL3))
+}

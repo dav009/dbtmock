@@ -182,7 +182,8 @@ func mockToSql(m Mock) string {
 		columnsValues := []string{}
 		for column, value := range row {
 			if columnType, ok := m.types[column]; ok {
-				columnsValues = append(columnsValues, fmt.Sprintf("( %s as %s ) AS %s", value, columnType, column))
+				columnsValues = append(columnsValues, fmt.Sprintf("CAST(%s AS %s) AS %s", value, columnType, column))
+				fmt.Println(columnsValues)
 			} else {
 				columnsValues = append(columnsValues, fmt.Sprintf("%s AS %s", value, column))
 			}
