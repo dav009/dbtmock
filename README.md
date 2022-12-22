@@ -17,17 +17,17 @@
 - ToDo
 
 ## Usage
-`dbtest --manifest target/manifest.json --tests tests_folder --output output_folder`
+`dbtest --manifest target/manifest.json --tests unit_tests --output tests`
 
 - `--manifest` is the path to your dbt's project `manifest.json`
 - `--tests` is a path to a folder contaning `json` files. Each json file in that folder is a test definition (see examples below)
-- `--output` is the path folder where the generated tests will be stored
+- `--output` is the path folder where the generated tests will be stored. By default it points to `tests` folder where `dbt` looks for custom tests to run
 
 
 ## Detailed usage
 
 1. Go to your dbt project: `cd my_project`
-2. Create a folder to store your tests definitions: `mkdir autotests`
+2. Create a folder to store your tests definitions: `mkdir unit_tests`
 3. Create a json file per test definition. For example the Json file below is a single test in which there are two mocks `seed.jaffle_shop.raw_customers` and  `seed.jaffle_shop.raw_orders`. The test will run the model `"model.jaffle_shop.customers"`. The content of `output` has the data which will be used for assertions.
 
 ``` json
@@ -65,8 +65,10 @@
 ```
 
 4. Go to your dbt project, make sure you generated a `manifest.json` (e.g: run `dbt compile`)
-5. run `dbtest --manifest target/manifest.json --tests dbtests --output tests`
-6. Check the files in the output
+5. run `dbtest --tests unit_tests --output tests`
+6. Check the files in the output folder : `ls tests`
+7. Run `dbt test` 
+8. You should see your tests in the list of test being ran by dbt
 
 ## Example project
 - ToDo
@@ -77,4 +79,4 @@
 - Given a model to test `dbtest` recursively rebuilds the sql queries accross dependencies
 - While rebuilding a model SQL `dbtest` replaces table for given mocked data
 - `dbtest` creates a giant SQL query with mocks and model SQL logic. The output of the query is then compared to the provided expected data via a `MINUS` sql operation.
- 
+- Only tested with BigQuery 
