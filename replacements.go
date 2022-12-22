@@ -134,7 +134,9 @@ func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replace
 	}
 
 	sqlCode := currentNode.Compiledcode
-
+	if sqlCode == "" {
+		return Replacement{}, errors.New(fmt.Sprintf("Node: %s has empty CompiledSql. Please make sure your manifest file is compiled by running `dbt compile`", nodeKey))
+	}
 	for _, replacement := range node2sql {
 		sqlCode = Replace(sqlCode, replacement)
 
@@ -179,7 +181,7 @@ func GenerateTestSQL(t Test, m Manifest) (string, error) {
 
 	replacement, err := sql(m, t.Model, t.Mocks)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	sql, err := assertSQLCode(replacement.ReplaceSql, t.Output)
 	if err != nil {

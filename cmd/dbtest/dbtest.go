@@ -24,15 +24,15 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:     "tests",
-				Value:    "",
+				Value:    "unit_tests/",
 				Usage:    "Path to your folder containing json test definitions",
-				Required: true,
+				Required: false,
 			},
 			&cli.StringFlag{
 				Name:     "output",
-				Value:    "",
+				Value:    "tests",
 				Usage:    "Path where test queries will be gneerated",
-				Required: true,
+				Required: false,
 			},
 		},
 		Action: func(cCtx *cli.Context) error {
