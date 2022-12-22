@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dav009/dbtest"
+	dbtmock "github.com/dav009/dbtest"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -40,10 +40,10 @@ func main() {
 			testsPath := cCtx.String("tests")
 			output := cCtx.String("output")
 			fmt.Println("Using Manifest: ", manifestPath)
-			m := dbtest.ParseManifest(manifestPath)
+			m := dbtmock.ParseManifest(manifestPath)
 			fmt.Println("Parsed Manifest! ")
 			fmt.Println("Parsing tests in: ", testsPath)
-			tests, err := dbtest.ParseFolder(testsPath)
+			tests, err := dbtmock.ParseFolder(testsPath)
 			if err != nil {
 				return err
 			}
@@ -51,13 +51,13 @@ func main() {
 			fmt.Println("Generating SQL...")
 			for _, t := range tests {
 				fmt.Println("Generating Test: ", t.Name)
-				sqlCode, err := dbtest.GenerateTestSQL(t, m)
+				sqlCode, err := dbtmock.GenerateTestSQL(t, m)
 				if err != nil {
 					return err
 				}
 				path := filepath.Join(output, t.Name+".sql")
 				fmt.Println("Saving Test: ", path)
-				err = dbtest.SaveSQL(path, sqlCode)
+				err = dbtmock.SaveSQL(path, sqlCode)
 				if err != nil {
 					return err
 				}
