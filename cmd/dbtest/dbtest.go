@@ -8,11 +8,11 @@ import (
 
 func main() {
 	m := dbtest.ParseManifest("target/manifest.json")
-	t2, err := dbtest.ParseTest("test.json")
+	t, err := dbtest.ParseTest("test.json")
 	if err != nil {
 		panic(err)
 	}
-	sqlCode, err := dbtest.GenerateTestSQL(t2, m)
+	sqlCode, err := dbtest.GenerateTestSQL(t, m)
 	if err != nil {
 		panic(err)
 	}
