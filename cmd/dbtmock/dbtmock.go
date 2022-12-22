@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	dbtmock "github.com/dav009/dbtest"
+	"github.com/dav009/dbtmock"
 	cli "github.com/urfave/cli/v2"
 )
 

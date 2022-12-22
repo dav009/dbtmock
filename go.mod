@@ -1,4 +1,4 @@
-module github.com/dav009/dbtest
+module github.com/dav009/dbtmock
 
 go 1.18
 
