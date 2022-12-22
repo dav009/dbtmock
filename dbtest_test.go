@@ -53,9 +53,8 @@ func TestMockToSqlWithTypes(t *testing.T) {
 }
 
 func TestParseJson(t *testing.T) {
-
 	fmt.Println("parsing")
-	test, err := parseTest("test.json")
+	test, err := ParseTest("test.json")
 	assert.Nil(t, err)
 	expectedTest := Test{
 		Name:   "dummy_test",
