@@ -71,7 +71,23 @@
 8. You should see your tests in the list of test being ran by dbt
 
 ## Example project
-- ToDo
+
+Take a look at [INSERT PROJECT HERE]()
+- This a fork of the vanilla `jaffle_store` project,  which is the `hello world` of dbt
+- This fork has a few changes:
+ - `unit_tests` folder with a sample `test.json`
+ - some mock data as csv: `output.csv` as a data to assert the final output of the given test
+ - it uses already given `csv` files as mocked data
+- You can use this fork to run `dbtest`
+
+1. Clone the project `git clone ..`
+2. Create a `profile.yml` with your BigQuery settings
+3. Run `dbt seed`
+4. Run `dbt compile`
+5. Run `dbtest` (no arguments needed)
+6. See test getnerated in : `tests/dummy_test.sql`
+7. Run `dbt test` see in the output the result: `START test dummy_test.. PASS dummy_test`
+
 
 ## Details
 
