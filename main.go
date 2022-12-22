@@ -36,7 +36,7 @@ type Test struct {
 	Name   string          `json:"name"`
 	Model  string          `json:"model"`
 	Mocks  map[string]Mock `json:"mocks"`
-	Output Output          `json:"output"`
+	Output Mock          `json:"output"`
 }
 
 /* Manifest parsing */
@@ -78,7 +78,7 @@ func parseManifest(path string) Manifest {
 }
 
 func isModel(nodeKey string) bool {
-	return strings.HasPrefix(nodeKey, "model")
+	return strings.HasPrefix(nodeKey, "model")  ||   strings.HasPrefix(nodeKey, "seed")
 }
 
 func Replace(sql string, replacement Replacement) string {
@@ -188,10 +188,10 @@ func mockToSql(m Mock) string {
 		for _, column := range columns {
 			value := row[column]
 			if columnType, ok := m.Types[column]; ok {
-				columnsValues = append(columnsValues, fmt.Sprintf("CAST(%s AS %s) AS %s", value, columnType, column))
+				columnsValues = append(columnsValues, fmt.Sprintf("CAST(\"%s\" AS %s) AS %s", value, columnType, column))
 			
 			} else {
-				columnsValues = append(columnsValues, fmt.Sprintf("%s AS %s", value, column))
+				columnsValues = append(columnsValues, fmt.Sprintf("\"%s\" AS %s", value, column))
 			}
 
 		}
@@ -243,23 +243,44 @@ func parseFolder(path string) ([]Test, error) {
 	return []Test{}, nil
 }
 
+func assertSQLCode(sql string, output Mock) (string, error) {
+	assertTableSql := mockToSql(output)
+	return fmt.Sprintf("%s \n  EXCEPT DISTINCT \n SELECT * FROM (%s)", sql, assertTableSql), nil
+}
+
+func GenerateTest(t Test, m Manifest) (string, error){
+	replacement, err := sql(m, t.Model, t.Mocks)
+	if err != nil {
+		return "", nil
+	}
+	sql, err := assertSQLCode(replacement.ReplaceSql, t.Output)
+	if err!=nil{
+		return "", err
+	}
+	return sql, nil
+}
+
+// check two tables in BQ via: EXCEPT DISTINCT
+
 func main() {
-	test := Test{
+	m := parseManifest("target/manifest.json")
+	t2, err := parseTest("test.json")
+	if err!=nil {
+		panic(err)
+	}
+	/*t := Test{
 		Name:  "dummy_test",
-		Model: "dummy_model",
+		Model: "model.data_feeds.liq_evals_by_asset",
 		Mocks: map[string]Mock{
 			"sme": Mock{Name: "mock1"},
 		},
 		Output: Output{Name: "first check"},
-	}
-	m := parseManifest("manifest.json")
-
-	replacement, err := sql(m, "model.data_feeds.liq_evals_by_asset", test.Mocks)
-
+	}*/
+	sqlCode, err := GenerateTest(t2, m)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("")
 	fmt.Println("LAST RESULT")
-	fmt.Println(fmt.Sprintf("%v", replacement.ReplaceSql))
+	fmt.Println(fmt.Sprintf("%v", sqlCode))
 }

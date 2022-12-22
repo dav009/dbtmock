@@ -31,9 +31,9 @@ func TestReplacePreviousAlias(t *testing.T) {
 func TestMockToSql(t *testing.T) {
 	m := Mock{Filepath: "sample.csv"}
 	sql := mockToSql(m)
-	expectedSQL1 := "SELECT something AS column1, 1.0 AS column2, 100 AS column3"
-	expectedSQL2 := "SELECT something2 AS column1, 2.0 AS column2, 200 AS column3"
-	expectedSQL3 := "SELECT something3 AS column1, 3.0 AS column2, 300 AS column3"
+	expectedSQL1 := "SELECT \"something\" AS column1, \"1.0\" AS column2, \"100\" AS column3"
+	expectedSQL2 := "SELECT \"something2\" AS column1, \"2.0\" AS column2, \"200\" AS column3"
+	expectedSQL3 := "SELECT \"something3\" AS column1, \"3.0\" AS column2, \"300\" AS column3"
 	assert.True(t, strings.Contains(sql, expectedSQL1))
 	assert.True(t, strings.Contains(sql, expectedSQL2))
 	assert.True(t, strings.Contains(sql, expectedSQL3))
@@ -42,9 +42,9 @@ func TestMockToSql(t *testing.T) {
 func TestMockToSqlWithTypes(t *testing.T) {
 	m := Mock{Filepath: "sample.csv", Types: map[string]string{"column2": "INT64"}}
 	sql := mockToSql(m)
-	expectedSQL1 := "SELECT something AS column1, CAST(1.0 AS INT64) AS column2, 100 AS column3"
-	expectedSQL2 := "SELECT something2 AS column1, CAST(2.0 AS INT64) AS column2, 200 AS column3"
-	expectedSQL3 := "SELECT something3 AS column1, CAST(3.0 AS INT64) AS column2, 300 AS column3"
+	expectedSQL1 := "SELECT \"something\" AS column1, CAST(\"1.0\" AS INT64) AS column2, \"100\" AS column3"
+	expectedSQL2 := "SELECT \"something2\" AS column1, CAST(\"2.0\" AS INT64) AS column2, \"200\" AS column3"
+	expectedSQL3 := "SELECT \"something3\" AS column1, CAST(\"3.0\" AS INT64) AS column2, \"300\" AS column3"
 	assert.True(t, strings.Contains(sql, expectedSQL1))
 	assert.True(t, strings.Contains(sql, expectedSQL2))
 	assert.True(t, strings.Contains(sql, expectedSQL3))
@@ -57,7 +57,7 @@ func TestParseJson(t *testing.T) {
 	assert.Nil(t, err)
 	expectedTest := Test{
 		Name:   "dummy_test",
-		Output: Output{Name: "something"},
+		Output: Mock{Name: "something"},
 		Model:  "dummy_model",
 		Mocks: map[string]Mock{
 			"something": Mock{
