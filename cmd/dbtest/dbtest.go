@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"github.com/dav009/dbtest"
 	cli "github.com/urfave/cli/v2"
@@ -37,22 +38,28 @@ func main() {
 		Action: func(cCtx *cli.Context) error {
 			manifestPath := cCtx.String("manifest")
 			testsPath := cCtx.String("tests")
+			output := cCtx.String("output")
 			fmt.Println("Using Manifest: ", manifestPath)
 			m := dbtest.ParseManifest(manifestPath)
 			fmt.Println("Parsed Manifest! ")
 			fmt.Println("Parsing tests in: ", testsPath)
-			t, err := dbtest.ParseTest(testsPath)
+			tests, err := dbtest.ParseFolder(testsPath)
 			if err != nil {
 				return err
 			}
-			fmt.Println("Parsed Tests! ")
-			fmt.Println("Generating Tests...")
-			sqlCode, err := dbtest.GenerateTestSQL(t, m)
-			if err != nil {
-				return err
+			fmt.Println("Parsed Tests: ", len(tests))
+			fmt.Println("Generating SQL...")
+			for _, t := range tests {
+				fmt.Println("Generating Test: ", t.Name)
+				sqlCode, err := dbtest.GenerateTestSQL(t, m)
+				if err != nil {
+					return err
+				}
+				path := filepath.Join(output, t.Name+".sql")
+				dbtest.SaveSQL(path, sqlCode)
+				fmt.Println("")
+				fmt.Println(fmt.Sprintf("%v", sqlCode))
 			}
-			fmt.Println("")
-			fmt.Println(fmt.Sprintf("%v", sqlCode))
 			return nil
 		},
 	}

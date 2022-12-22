@@ -2,6 +2,7 @@ package dbtest
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -53,7 +54,9 @@ func ParseFolder(path string) ([]Test, error) {
 		return []Test{}, err
 	}
 	for _, f := range files {
+
 		fullPath := filepath.Join(path, f.Name())
+		fmt.Println(fullPath)
 		test, err := ParseTest(fullPath)
 		if err != nil {
 			return []Test{}, err
@@ -61,5 +64,18 @@ func ParseFolder(path string) ([]Test, error) {
 		tests = append(tests, test)
 
 	}
-	return []Test{}, nil
+	return tests, nil
+}
+
+func SaveSQL(path string, sql string) error {
+	err := os.MkdirAll(filepath.Base(path), os.ModePerm)
+	if err != nil {
+		return err
+	}
+	data := []byte(sql)
+	err = ioutil.WriteFile(path, data, 0644)
+	if err != nil {
+		return err
+	}
+	return nil
 }
