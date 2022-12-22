@@ -9,7 +9,6 @@ import (
 
 /* Describing Tests as structures */
 type Mock struct {
-	Name     string            `json:"name"`
 	Filepath string            `json:"filepath"`
 	Types    map[string]string `json:"types"`
 }

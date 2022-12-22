@@ -58,11 +58,10 @@ func TestParseJson(t *testing.T) {
 	assert.Nil(t, err)
 	expectedTest := Test{
 		Name:   "dummy_test",
-		Output: Mock{Name: "something"},
+		Output: Mock{Filepath: "out.csv"},
 		Model:  "dummy_model",
 		Mocks: map[string]Mock{
 			"something": Mock{
-				Name:     "mock1.mock",
 				Filepath: "something.csv",
 				Types: map[string]string{
 					"c1": "int64",

@@ -40,7 +40,7 @@
             "types": {
                 "id": "INT64"
             }
-        },    
+        },
         "seed.jaffle_shop.raw_orders": {
             "filepath": "seeds/raw_orders.csv",
             "types": {
