@@ -66,7 +66,6 @@ type Manifest struct {
 
 // returns a Manifest structure out of a .json file
 func parseManifest(path string) Manifest {
-	
 
 	jsonFile, err := os.Open(path)
 	if err != nil {
@@ -84,11 +83,10 @@ func isModel(nodeKey string) bool {
 	return strings.HasPrefix(nodeKey, "model") || strings.HasPrefix(nodeKey, "seed")
 }
 
-	/*
-	   Given a SQL query and a replacement Struct, it applies the recplament on the SQL and returns a new SQL query.   References to a Table are replaced
-	*/
+/*
+   Given a SQL query and a replacement Struct, it applies the recplament on the SQL and returns a new SQL query.   References to a Table are replaced
+*/
 func Replace(sql string, replacement Replacement) string {
-
 
 	if (replacement == Replacement{}) {
 		return sql
@@ -104,10 +102,10 @@ func Replace(sql string, replacement Replacement) string {
 	return newSql
 }
 
-	/*
-	   Returns the SQL code for a model.
-	   The returned SQL has replacement for the specified mocks.
-	*/
+/*
+   Returns the SQL code for a model.
+   The returned SQL has replacement for the specified mocks.
+*/
 func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
 
 	currentNode := manifest.Nodes[nodeKey]
@@ -149,10 +147,10 @@ func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replace
 	return replacement, nil
 }
 
-	/*
-	   Returns the SQL code for a Source.
-	   The returned SQL has replacement for the specified mocks.
-	*/
+/*
+   Returns the SQL code for a Source.
+   The returned SQL has replacement for the specified mocks.
+*/
 func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Replacement, error) {
 
 	source := manifest.Sources[sourceKey]
@@ -171,10 +169,10 @@ func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Repl
 	return Replacement{}, nil //errors.New(fmt.Sprintf("%v not mocked", sourceKey))
 }
 
-	/*
-	   Utility Function, converts a CSV file into a List of dictionaries.
-	   Each row is converted into a dictionary where the keys are columns.
-	*/
+/*
+   Utility Function, converts a CSV file into a List of dictionaries.
+   Each row is converted into a dictionary where the keys are columns.
+*/
 func CSVToMap(reader io.Reader) []map[string]string {
 
 	r := csv.NewReader(reader)
@@ -201,11 +199,10 @@ func CSVToMap(reader io.Reader) []map[string]string {
 	return rows
 }
 
-	/*
-	   Represents a Mock as SQL
-	*/
+/*
+   Represents a Mock as SQL
+*/
 type SQLMock struct {
-
 	Sql     string
 	Columns []string
 }
@@ -216,17 +213,17 @@ func mockEntryToSql(columnName string, value string, columnType string) string {
 	} else {
 		value = fmt.Sprintf("\"%s\"", value)
 	}
-	if columnType!=""{
+	if columnType != "" {
 		return fmt.Sprintf("CAST(%s AS %s) AS %s", value, columnType, columnName)
 	}
 
-	return  fmt.Sprintf("%s AS %s", value, columnName)
-	
+	return fmt.Sprintf("%s AS %s", value, columnName)
+
 }
 
-	/*
-	   Converts a Mock into a SQL statement that we can use in Replacements
-	*/
+/*
+   Converts a Mock into a SQL statement that we can use in Replacements
+*/
 func mockToSql(m Mock) (SQLMock, error) {
 
 	allColumns := []string{}
@@ -263,10 +260,10 @@ func mockToSql(m Mock) (SQLMock, error) {
 
 }
 
-	/*
-	   Returns the SQL code for a model/source.
-	   The SQL retunred code has all mocked models/sources replaced for the data the mocks contained
-	*/
+/*
+   Returns the SQL code for a model/source.
+   The SQL retunred code has all mocked models/sources replaced for the data the mocks contained
+*/
 func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
 
 	if isModel(nodeKey) {
@@ -276,9 +273,9 @@ func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement,
 	}
 }
 
-	/*
-	   returns a Test structure given a filepath
-	*/
+/*
+   returns a Test structure given a filepath
+*/
 func parseTest(path string) (Test, error) {
 
 	jsonFile, err := os.Open(path)
@@ -296,9 +293,9 @@ func parseTest(path string) (Test, error) {
 	return test, nil
 }
 
-	/*
-	   Given a folder returns a list of Test structs
-	*/
+/*
+   Given a folder returns a list of Test structs
+*/
 func parseFolder(path string) ([]Test, error) {
 
 	files, err := ioutil.ReadDir(path)
@@ -318,10 +315,10 @@ func parseFolder(path string) ([]Test, error) {
 	return []Test{}, nil
 }
 
-	/*
-	   Given the SQL code of a model and an Expected Output mock,
-	   This function returns a SQL  query which asserts that the output table of SQL is equal to the data contained in the mock
-	*/
+/*
+   Given the SQL code of a model and an Expected Output mock,
+   This function returns a SQL  query which asserts that the output table of SQL is equal to the data contained in the mock
+*/
 func assertSQLCode(sql string, output Mock) (string, error) {
 
 	mockedSql, err := mockToSql(output)
@@ -332,9 +329,9 @@ func assertSQLCode(sql string, output Mock) (string, error) {
 	return fmt.Sprintf("SELECT %s FROM( %s ) \n  EXCEPT DISTINCT \n SELECT %s FROM (%s)", columns, sql, columns, mockedSql.Sql), nil
 }
 
-	/*
-	   Given a Test it generates the SQL code that mocks data, run the needed logic and asserts the output data
-	*/
+/*
+   Given a Test it generates the SQL code that mocks data, run the needed logic and asserts the output data
+*/
 
 func GenerateTestSQL(t Test, m Manifest) (string, error) {
 
