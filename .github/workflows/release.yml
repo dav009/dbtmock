@@ -22,6 +22,5 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         goos: ${{ matrix.goos }}
         goarch: ${{ matrix.goarch }}
-        goversion: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
-        project_path: ".cmd/dbtmock"
+        project_path: "./cmd/dbtmock"
         binary_name: "dbtmock"
