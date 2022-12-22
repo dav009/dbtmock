@@ -19,7 +19,7 @@ func main() {
 				Name:     "manifest",
 				Value:    "target/manifest.json",
 				Usage:    "Path to your dbt's manifest.json",
-				Required: true,
+				Required: false,
 			},
 			&cli.StringFlag{
 				Name:     "tests",
