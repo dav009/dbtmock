@@ -1,17 +1,9 @@
-package main
+package dbtest
 
 import (
-	"encoding/csv"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"os"
-	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 )
 
@@ -20,12 +12,6 @@ type Mock struct {
 	Name     string            `json:"name"`
 	Filepath string            `json:"filepath"`
 	Types    map[string]string `json:"types"`
-}
-
-type Replacement struct {
-	TableFullName  string
-	ReplaceSql     string
-	TableShortName string
 }
 
 type Output struct {
@@ -64,19 +50,10 @@ type Manifest struct {
 	X       map[string]interface{} `json:"-"`
 }
 
-// returns a Manifest structure out of a .json file
-func parseManifest(path string) Manifest {
-
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-	bytes, _ := ioutil.ReadAll(jsonFile)
-	manifest := Manifest{}
-	if err := json.Unmarshal(bytes, &manifest); err != nil {
-		panic(err)
-	}
-	return manifest
+type Replacement struct {
+	TableFullName  string
+	ReplaceSql     string
+	TableShortName string
 }
 
 func isModel(nodeKey string) bool {
@@ -100,6 +77,27 @@ func Replace(sql string, replacement Replacement) string {
 	createAlias := fmt.Sprintf("(%s) AS %s", replacement.ReplaceSql, replacement.TableShortName)
 	newSql = strings.ReplaceAll(newSql, fmt.Sprintf("%s", replacement.TableFullName), createAlias)
 	return newSql
+}
+
+/*
+   Returns the SQL code for a Source.
+   The returned SQL has replacement for the specified mocks.
+*/
+func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Replacement, error) {
+
+	source := manifest.Sources[sourceKey]
+	if m, ok := mocks[sourceKey]; ok {
+		mockSql, err := mockToSql(m)
+		if err != nil {
+			return Replacement{}, err
+		}
+		r := Replacement{
+			TableFullName:  source.RelationName,
+			ReplaceSql:     mockSql.Sql,
+			TableShortName: source.Name}
+		return r, nil
+	}
+	return Replacement{}, errors.New(fmt.Sprintf("%v not mocked", sourceKey))
 }
 
 /*
@@ -148,119 +146,6 @@ func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replace
 }
 
 /*
-   Returns the SQL code for a Source.
-   The returned SQL has replacement for the specified mocks.
-*/
-func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Replacement, error) {
-
-	source := manifest.Sources[sourceKey]
-	if m, ok := mocks[sourceKey]; ok {
-		mockSql, err := mockToSql(m)
-		if err != nil {
-			return Replacement{}, err
-		}
-		r := Replacement{
-			TableFullName:  source.RelationName,
-			ReplaceSql:     mockSql.Sql,
-			TableShortName: source.Name}
-		return r, nil
-	}
-	errors.New("something")
-	return Replacement{}, nil //errors.New(fmt.Sprintf("%v not mocked", sourceKey))
-}
-
-/*
-   Utility Function, converts a CSV file into a List of dictionaries.
-   Each row is converted into a dictionary where the keys are columns.
-*/
-func CSVToMap(reader io.Reader) []map[string]string {
-
-	r := csv.NewReader(reader)
-	rows := []map[string]string{}
-	var header []string
-	for {
-		record, err := r.Read()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		if header == nil {
-			header = record
-		} else {
-			dict := map[string]string{}
-			for i := range header {
-				dict[header[i]] = record[i]
-			}
-			rows = append(rows, dict)
-		}
-	}
-	return rows
-}
-
-/*
-   Represents a Mock as SQL
-*/
-type SQLMock struct {
-	Sql     string
-	Columns []string
-}
-
-func mockEntryToSql(columnName string, value string, columnType string) string {
-	if value == "" {
-		value = "null"
-	} else {
-		value = fmt.Sprintf("\"%s\"", value)
-	}
-	if columnType != "" {
-		return fmt.Sprintf("CAST(%s AS %s) AS %s", value, columnType, columnName)
-	}
-
-	return fmt.Sprintf("%s AS %s", value, columnName)
-
-}
-
-/*
-   Converts a Mock into a SQL statement that we can use in Replacements
-*/
-func mockToSql(m Mock) (SQLMock, error) {
-
-	allColumns := []string{}
-	file, err := os.Open(m.Filepath)
-	if err != nil {
-		return SQLMock{}, err
-
-	}
-	data := CSVToMap(file)
-	var sqlStatements []string
-	for _, row := range data {
-
-		columnsValues := []string{}
-		columns := make([]string, 0)
-		// ordering columns so we can test
-		for k, _ := range row {
-			columns = append(columns, k)
-		}
-		sort.Strings(columns)
-		if len(allColumns) == 0 {
-			allColumns = columns
-		}
-		for _, column := range columns {
-			value := row[column]
-			columnType := m.Types[column]
-			entry := mockEntryToSql(column, value, columnType)
-			columnsValues = append(columnsValues, entry)
-
-		}
-		statement := fmt.Sprintf("\n SELECT %s", strings.Join(columnsValues, ", "))
-		sqlStatements = append(sqlStatements, statement)
-	}
-	return SQLMock{Sql: strings.Join(sqlStatements, "\n UNION ALL \n"), Columns: allColumns}, nil
-
-}
-
-/*
    Returns the SQL code for a model/source.
    The SQL retunred code has all mocked models/sources replaced for the data the mocks contained
 */
@@ -271,48 +156,6 @@ func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement,
 	} else {
 		return sqlSource(manifest, nodeKey, mocks)
 	}
-}
-
-/*
-   returns a Test structure given a filepath
-*/
-func parseTest(path string) (Test, error) {
-
-	jsonFile, err := os.Open(path)
-	if err != nil {
-		return Test{}, err
-	}
-	bytes, err := ioutil.ReadAll(jsonFile)
-	if err != nil {
-		return Test{}, err
-	}
-	test := Test{}
-	if err := json.Unmarshal(bytes, &test); err != nil {
-		return Test{}, err
-	}
-	return test, nil
-}
-
-/*
-   Given a folder returns a list of Test structs
-*/
-func parseFolder(path string) ([]Test, error) {
-
-	files, err := ioutil.ReadDir(path)
-	tests := []Test{}
-	if err != nil {
-		return []Test{}, err
-	}
-	for _, f := range files {
-		fullPath := filepath.Join(path, f.Name())
-		test, err := parseTest(fullPath)
-		if err != nil {
-			return []Test{}, err
-		}
-		tests = append(tests, test)
-
-	}
-	return []Test{}, nil
 }
 
 /*
@@ -344,19 +187,4 @@ func GenerateTestSQL(t Test, m Manifest) (string, error) {
 		return "", err
 	}
 	return sql, nil
-}
-
-func main() {
-	m := parseManifest("target/manifest.json")
-	t2, err := parseTest("test.json")
-	if err != nil {
-		panic(err)
-	}
-	sqlCode, err := GenerateTestSQL(t2, m)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("")
-	fmt.Println("LAST RESULT")
-	fmt.Println(fmt.Sprintf("%v", sqlCode))
 }
