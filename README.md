@@ -79,7 +79,7 @@
 8. You should see your tests in the list of test being ran by dbt
 
 
-## Example project
+### Example project
 
 Take a look at [dbtmock_example](https://github.com/dav009/dbtmock_example)
 - This a fork of the vanilla `jaffle_store` project,  which is the `hello world` of dbt
