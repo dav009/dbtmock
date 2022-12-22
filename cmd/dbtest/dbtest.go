@@ -56,9 +56,8 @@ func main() {
 					return err
 				}
 				path := filepath.Join(output, t.Name+".sql")
+				fmt.Println("Saving Test: ", path)
 				dbtest.SaveSQL(path, sqlCode)
-				fmt.Println("")
-				fmt.Println(fmt.Sprintf("%v", sqlCode))
 			}
 			return nil
 		},
