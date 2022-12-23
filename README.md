@@ -22,7 +22,12 @@
 
 
 ## Installation
-- ToDo
+
+### Prebuilt binary
+- Check Github releases, Download your needed binary
+
+### Golang
+- `go install github.com/dav009/dbtmock/cmd/dbtmock@latest`
 
 ## Usage
 `dbtmock --manifest target/manifest.json --tests unit_tests --output tests`
@@ -97,6 +102,11 @@ You can use this fork to run `dbtmock`
 5. Run `dbtmock` (no arguments needed)
 6. See test generated in : `tests/dummy_test.sql`
 7. Run `dbt test` see in the output the result: `START test dummy_test.. PASS dummy_test`
+
+
+## Manual build
+
+- `go build cmd/dbtmock/dbtmock.go`
 
 
 ## Details
