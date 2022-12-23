@@ -1,0 +1,14 @@
+# .goreleaser.yml
+project_name: dbtmock
+builds:
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    id: "dbtmock"
+    dir: .
+    main: ./cmd/dbtmock
