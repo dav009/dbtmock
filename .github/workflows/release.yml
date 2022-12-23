@@ -3,25 +3,21 @@ on:
     types: [created]
 
 jobs:
-  releases-matrix:
     name: Release Go Binary
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [linux, windows, darwin]
-        goarch: ["386", amd64, arm64]
-        exclude:
-          - goarch: "386"
-            goos: darwin
-          - goarch: arm64
-            goos: windows
     steps:
-    - uses: actions/checkout@v3
-    - uses: wangyoucao577/go-release-action@90da8ebfdc010a0e7d378419a76fd90230a05228
-      with:
-        goversion: 1.18.2
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        goos: ${{ matrix.goos }}
-        goarch: ${{ matrix.goarch }}
-        project_path: "./cmd/dbtmock"
-        binary_name: "dbtmock"
+      - uses: actions/checkout@v3
+
+      - name: Set up Go 1.18
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18 
+        id: go
+        
+      - name: Create a Release using GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist --config .goreleaser.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
