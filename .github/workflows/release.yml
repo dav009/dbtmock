@@ -1,6 +1,6 @@
 on:
   release:
-    types: [created]
+    types: [publish]
 
 jobs:
     name: Release Go Binary
