@@ -60,7 +60,7 @@ func isModel(nodeKey string) bool {
 }
 
 /*
-   Given a SQL query and a replacement Struct, it applies the recplament on the SQL and returns a new SQL query.   References to a Table are replaced
+Given a SQL query and a replacement Struct, it applies the recplament on the SQL and returns a new SQL query.   References to a Table are replaced
 */
 func Replace(sql string, replacement Replacement) string {
 
@@ -79,8 +79,8 @@ func Replace(sql string, replacement Replacement) string {
 }
 
 /*
-   Returns the SQL code for a Source.
-   The returned SQL has replacement for the specified mocks.
+Returns the SQL code for a Source.
+The returned SQL has replacement for the specified mocks.
 */
 func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Replacement, error) {
 
@@ -100,8 +100,8 @@ func sqlSource(manifest Manifest, sourceKey string, mocks map[string]Mock) (Repl
 }
 
 /*
-   Returns the SQL code for a model.
-   The returned SQL has replacement for the specified mocks.
+Returns the SQL code for a model.
+The returned SQL has replacement for the specified mocks.
 */
 func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
 
@@ -147,8 +147,8 @@ func sqlModel(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replace
 }
 
 /*
-   Returns the SQL code for a model/source.
-   The SQL retunred code has all mocked models/sources replaced for the data the mocks contained
+Returns the SQL code for a model/source.
+The SQL retunred code has all mocked models/sources replaced for the data the mocks contained
 */
 func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement, error) {
 
@@ -160,10 +160,10 @@ func sql(manifest Manifest, nodeKey string, mocks map[string]Mock) (Replacement,
 }
 
 /*
-   Given the SQL code of a model and an Expected Output mock,
-   This function returns a SQL  query which asserts that the output table of SQL is equal to the data contained in the mock
+Given the SQL code of a model and an Expected Output mock,
+This function returns a SQL  query which asserts that the output table of SQL is equal to the data contained in the mock
 */
-func assertSQLCode(sql string, output Mock) (string, error) {
+func queryMinusMock(sql string, output Mock) (string, error) {
 
 	mockedSql, err := mockToSql(output)
 	if err != nil {
@@ -173,19 +173,40 @@ func assertSQLCode(sql string, output Mock) (string, error) {
 	return fmt.Sprintf("SELECT %s FROM( %s ) \n  EXCEPT DISTINCT \n SELECT %s FROM (%s)", columns, sql, columns, mockedSql.Sql), nil
 }
 
+func mockMinusQuery(sql string, output Mock) (string, error) {
+
+	mockedSql, err := mockToSql(output)
+	if err != nil {
+		return "", err
+	}
+	columns := strings.Join(mockedSql.Columns, ",")
+	return fmt.Sprintf("SELECT %s FROM( %s ) \n  EXCEPT DISTINCT \n SELECT %s FROM (%s)", columns, mockedSql.Sql, columns, sql), nil
+}
+
 /*
    Given a Test it generates the SQL code that mocks data, run the needed logic and asserts the output data
 */
 
-func GenerateTestSQL(t Test, m Manifest) (string, error) {
+type SQLTestQuery struct {
+	ExpectedMinusQuery string
+	QueryMinusExpected string
+}
+
+func GenerateTestSQL(t Test, m Manifest) (SQLTestQuery, error) {
 
 	replacement, err := sql(m, t.Model, t.Mocks)
 	if err != nil {
-		return "", err
+		return SQLTestQuery{}, err
 	}
-	sql, err := assertSQLCode(replacement.ReplaceSql, t.Output)
+
+	sqlQueryMinusExpectation, err := queryMinusMock(replacement.ReplaceSql, t.Output)
 	if err != nil {
-		return "", err
+		return SQLTestQuery{}, err
 	}
-	return sql, nil
+	sqlExpectationMinusQuery, err := mockMinusQuery(replacement.ReplaceSql, t.Output)
+	if err != nil {
+		return SQLTestQuery{}, err
+	}
+
+	return SQLTestQuery{QueryMinusExpected: sqlQueryMinusExpectation, ExpectedMinusQuery: sqlExpectationMinusQuery}, nil
 }
