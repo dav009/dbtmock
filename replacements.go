@@ -192,6 +192,24 @@ type SQLTestQuery struct {
 	QueryMinusExpected string
 }
 
+/*
+   Generates the SQL of a model
+*/
+func GenerateModelSQL(t Test, m Manifest) (string, error) {
+
+	replacement, err := sql(m, t.Model, t.Mocks)
+	if err != nil {
+		return "", err
+	}
+	return replacement.ReplaceSql, nil
+
+}
+
+/*
+   Generates SQL for test assertions
+    - ModelSQL <Minus> Expected results
+    - Expected results <Minus> ModelSQL
+*/
 func GenerateTestSQL(t Test, m Manifest) (SQLTestQuery, error) {
 
 	replacement, err := sql(m, t.Model, t.Mocks)

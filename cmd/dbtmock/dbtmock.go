@@ -93,6 +93,7 @@ func GenerateSQL() cli.Command {
 			manifestPath := cCtx.String("manifest")
 			testsPath := cCtx.String("tests")
 			output := cCtx.String("output")
+			flavor := cCtx.String("flavor")
 			fmt.Println("Using Manifest: ", manifestPath)
 			m := dbtmock.ParseManifest(manifestPath)
 			fmt.Println("Parsed Manifest! ")
@@ -103,28 +104,40 @@ func GenerateSQL() cli.Command {
 			}
 			fmt.Println("Parsed Tests: ", len(tests))
 			fmt.Println("Generating SQL...")
-			for _, t := range tests {
-				fmt.Println("Generating Test: ", t.Name)
-				sqlQueries, err := dbtmock.GenerateTestSQL(t, m)
-				if err != nil {
-					return err
+			if flavor == "simple" {
+				for _, t := range tests {
+					modelSql, err := dbtmock.GenerateModelSQL(t, m)
+					if err != nil {
+						return err
+					}
+					path := filepath.Join(output, t.Name+".sql")
+					err = dbtmock.SaveSQL(path, modelSql)
 				}
+			}
+			if flavor == "test " {
+				for _, t := range tests {
+					fmt.Println("Generating Test: ", t.Name)
+					sqlQueries, err := dbtmock.GenerateTestSQL(t, m)
+					if err != nil {
+						return err
+					}
 
-				path := filepath.Join(output, t.Name+"_"+"ExpectedMinusQuery"+".sql")
-				fmt.Println("Saving Test: ", path)
-				fmt.Println(sqlQueries.ExpectedMinusQuery)
-				err = dbtmock.SaveSQL(path, sqlQueries.ExpectedMinusQuery)
-				if err != nil {
-					return err
+					path := filepath.Join(output, t.Name+"_"+"ExpectedMinusQuery"+".sql")
+					fmt.Println("Saving Test: ", path)
+					fmt.Println(sqlQueries.ExpectedMinusQuery)
+					err = dbtmock.SaveSQL(path, sqlQueries.ExpectedMinusQuery)
+					if err != nil {
+						return err
+					}
+
+					path = filepath.Join(output, t.Name+"_"+"QueryMinusExpected"+".sql")
+					fmt.Println("Saving Test: ", path)
+					err = dbtmock.SaveSQL(path, sqlQueries.QueryMinusExpected)
+					if err != nil {
+						return err
+					}
+
 				}
-
-				path = filepath.Join(output, t.Name+"_"+"QueryMinusExpected"+".sql")
-				fmt.Println("Saving Test: ", path)
-				err = dbtmock.SaveSQL(path, sqlQueries.QueryMinusExpected)
-				if err != nil {
-					return err
-				}
-
 			}
 			return nil
 		},
