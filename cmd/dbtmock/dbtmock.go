@@ -14,7 +14,7 @@ func TestCommand() cli.Command {
 	return cli.Command{
 		Name:    "test",
 		Aliases: []string{"t"},
-		Usage:   "Run tests using a simulated BQ engine",
+		Usage:   "Run tests either using a local BQ emulator or directly running your queries on the cloud",
 		Flags: []cli.Flag{&cli.StringFlag{
 			Name:     "tests",
 			Value:    "unit_tests/",
@@ -30,7 +30,7 @@ func TestCommand() cli.Command {
 			&cli.StringFlag{
 				Name:     "mode",
 				Value:    "local",
-				Usage:    "whether to run test in local or cloud mode",
+				Usage:    "`local` (default) runs your test on a BQ emulator. 'cloud': runs your queries on the cloud",
 				Required: false,
 			},
 		},
@@ -62,7 +62,7 @@ func GenerateSQL() cli.Command {
 	return cli.Command{
 		Name:    "generate",
 		Aliases: []string{"g"},
-		Usage:   "Run tests using a simulated BQ engine",
+		Usage:   "Generate the SQL queries used for tests",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "manifest",
@@ -83,9 +83,9 @@ func GenerateSQL() cli.Command {
 				Required: false,
 			},
 			&cli.StringFlag{
-				Name:     "mode",
+				Name:     "flavor",
 				Value:    "test",
-				Usage:    "test mode: Generate SQL run during tests. simple: generates the sql code of a model",
+				Usage:    "`test`(default): Generate SQL run during tests. simple: generates the sql code of a model",
 				Required: false,
 			},
 		},
